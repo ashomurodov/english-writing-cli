@@ -1,13 +1,10 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import chalk from "chalk";
 import type { ReviewResult } from "./reviewer.js";
+import { DATA_DIR } from "./paths.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = join(__dirname, "..");
-
-const STATS_PATH = join(PROJECT_ROOT, "stats", "weakness-profile.json");
+const STATS_PATH = join(DATA_DIR, "stats", "weakness-profile.json");
 
 export interface CategoryStats {
   count: number;
@@ -53,7 +50,7 @@ export function updateStats(review: ReviewResult): void {
  * This is more reliable than incremental updates.
  */
 function rebuildProfile(): WeaknessProfile {
-  const dailyDir = join(PROJECT_ROOT, "reports", "daily");
+  const dailyDir = join(DATA_DIR, "reports", "daily");
   if (!existsSync(dailyDir)) {
     return loadProfile();
   }

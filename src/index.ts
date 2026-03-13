@@ -6,21 +6,23 @@ import {
   existsSync,
   mkdirSync,
 } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { execSync, spawnSync } from "node:child_process";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 import { createInterface } from "node:readline";
 import chalk from "chalk";
 import { simpleGit } from "simple-git";
+import { DATA_DIR, getEditor } from "./paths.js";
 import { reviewLog, buildCorrectedMarkdown } from "./reviewer.js";
 import { showDiff } from "./differ.js";
 import { updateStats, printStats } from "./stats.js";
 import { generateWeeklyReport } from "./reporter.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = join(__dirname, "..");
-
-const git = simpleGit(PROJECT_ROOT);
+function getGit() {
+  if (!existsSync(DATA_DIR)) {
+    mkdirSync(DATA_DIR, { recursive: true });
+  }
+  return simpleGit(DATA_DIR);
+}
 
 function getToday(): string {
   const now = new Date();
@@ -32,11 +34,11 @@ function getToday(): string {
 
 function ensureDirs(): void {
   const dirs = [
-    join(PROJECT_ROOT, "logs", "raw"),
-    join(PROJECT_ROOT, "logs", "corrected"),
-    join(PROJECT_ROOT, "reports", "daily"),
-    join(PROJECT_ROOT, "reports", "weekly"),
-    join(PROJECT_ROOT, "stats"),
+    join(DATA_DIR, "logs", "raw"),
+    join(DATA_DIR, "logs", "corrected"),
+    join(DATA_DIR, "reports", "daily"),
+    join(DATA_DIR, "reports", "weekly"),
+    join(DATA_DIR, "stats"),
   ];
   for (const dir of dirs) {
     if (!existsSync(dir)) {
@@ -46,14 +48,21 @@ function ensureDirs(): void {
 }
 
 async function ensureGit(): Promise<void> {
-  const gitDir = join(PROJECT_ROOT, ".git");
+  const gitDir = join(DATA_DIR, ".git");
   if (!existsSync(gitDir)) {
-    console.log(chalk.dim("Initializing git repository..."));
+    const git = getGit();
+    console.log(chalk.dim("Initializing git repository in " + DATA_DIR));
     await git.init();
-    // Create initial commit
-    
+    // Create .gitkeep files so the initial commit is non-empty
+    const keepDirs = ["logs/raw", "logs/corrected", "reports/daily", "reports/weekly", "stats"];
+    for (const d of keepDirs) {
+      const keepPath = join(DATA_DIR, d, ".gitkeep");
+      if (!existsSync(keepPath)) {
+        writeFileSync(keepPath, "", "utf-8");
+      }
+    }
     await git.add(".");
-    await git.commit("init: english tracker project");
+    await git.commit("init: english tracker data");
   }
 }
 
@@ -85,19 +94,11 @@ program
     await ensureGit();
 
     const date = getToday();
-    const rawPath = join(PROJECT_ROOT, "logs", "raw", `${date}.md`);
-    const correctedPath = join(
-      PROJECT_ROOT,
-      "logs",
-      "corrected",
-      `${date}.md`
-    );
-    const reportPath = join(
-      PROJECT_ROOT,
-      "reports",
-      "daily",
-      `${date}.json`
-    );
+    const rawPath = join(DATA_DIR, "logs", "raw", `${date}.md`);
+    const correctedPath = join(DATA_DIR, "logs", "corrected", `${date}.md`);
+    const reportPath = join(DATA_DIR, "reports", "daily", `${date}.json`);
+
+    const editor = getEditor();
 
     // Check if log already exists
     if (existsSync(rawPath)) {
@@ -111,31 +112,18 @@ program
         return;
       }
       if (answer === "a" || answer === "append") {
-        // Append mode: open editor with existing content
-        const editor = process.env.EDITOR || "nano";
         console.log(chalk.dim(`Opening ${editor} to append to log...`));
-        spawnSync(editor, [rawPath], { stdio: "inherit" });
+        spawnSync(editor, [rawPath], { stdio: "inherit", shell: true });
       } else {
-        // Overwrite: open with template
-        writeFileSync(
-          rawPath,
-          `# English Log — ${date}\n\n`,
-          "utf-8"
-        );
-        const editor = process.env.EDITOR || "nano";
+        writeFileSync(rawPath, `# English Log — ${date}\n\n`, "utf-8");
         console.log(chalk.dim(`Opening ${editor}...`));
-        spawnSync(editor, [rawPath], { stdio: "inherit" });
+        spawnSync(editor, [rawPath], { stdio: "inherit", shell: true });
       }
     } else {
       // New log
-      writeFileSync(
-        rawPath,
-        `# English Log — ${date}\n\n`,
-        "utf-8"
-      );
-      const editor = process.env.EDITOR || "nano";
+      writeFileSync(rawPath, `# English Log — ${date}\n\n`, "utf-8");
       console.log(chalk.dim(`Opening ${editor}...`));
-      spawnSync(editor, [rawPath], { stdio: "inherit" });
+      spawnSync(editor, [rawPath], { stdio: "inherit", shell: true });
     }
 
     // Read the saved content
@@ -174,7 +162,13 @@ program
 
     // Git commit
     try {
-      await git.add([rawPath, correctedPath, reportPath, join(PROJECT_ROOT, "stats", "weakness-profile.json")]);
+      const git = getGit();
+      await git.add([
+        rawPath,
+        correctedPath,
+        reportPath,
+        join(DATA_DIR, "stats", "weakness-profile.json"),
+      ]);
       await git.commit(`log: ${date}`);
       console.log(chalk.dim(`\nCommitted to git: log: ${date}`));
     } catch {
@@ -189,7 +183,8 @@ program
     console.log(`  Mistakes:         ${chalk.red(s.incorrect_sentences)}`);
 
     const pct = s.accuracy_percent;
-    const pctColor = pct >= 80 ? chalk.green : pct >= 50 ? chalk.yellow : chalk.red;
+    const pctColor =
+      pct >= 80 ? chalk.green : pct >= 50 ? chalk.yellow : chalk.red;
     console.log(`  Accuracy:         ${pctColor(`${pct}%`)}`);
 
     if (s.top_error_categories.length > 0) {
@@ -202,8 +197,9 @@ program
       chalk.dim(`\nCorrected version saved to: logs/corrected/${date}.md`)
     );
     console.log(
-      chalk.dim(`Full analysis saved to: reports/daily/${date}.json\n`)
+      chalk.dim(`Full analysis saved to: reports/daily/${date}.json`)
     );
+    console.log(chalk.dim(`Data directory: ${DATA_DIR}\n`));
   });
 
 program

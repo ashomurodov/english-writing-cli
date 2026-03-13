@@ -1,11 +1,8 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import chalk from "chalk";
 import type { ReviewResult } from "./reviewer.js";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = join(__dirname, "..");
+import { DATA_DIR } from "./paths.js";
 
 /**
  * Get the Monday-based ISO week string for a date, e.g. "2026-W11"
@@ -58,7 +55,7 @@ function loadReviewsInRange(
   start: Date,
   end: Date
 ): ReviewResult[] {
-  const dailyDir = join(PROJECT_ROOT, "reports", "daily");
+  const dailyDir = join(DATA_DIR, "reports", "daily");
   if (!existsSync(dailyDir)) return [];
 
   const files = readdirSync(dailyDir).filter((f) => f.endsWith(".json"));
@@ -236,7 +233,7 @@ export function generateWeeklyReport(): void {
 
   const reportContent = lines.join("\n");
   const reportPath = join(
-    PROJECT_ROOT,
+    DATA_DIR,
     "reports",
     "weekly",
     `${weekId}.md`

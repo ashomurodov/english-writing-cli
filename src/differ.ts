@@ -1,14 +1,11 @@
 import { readFileSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import chalk from "chalk";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = join(__dirname, "..");
+import { DATA_DIR } from "./paths.js";
 
 export function showDiff(date: string): void {
-  const rawPath = join(PROJECT_ROOT, "logs", "raw", `${date}.md`);
-  const correctedPath = join(PROJECT_ROOT, "logs", "corrected", `${date}.md`);
+  const rawPath = join(DATA_DIR, "logs", "raw", `${date}.md`);
+  const correctedPath = join(DATA_DIR, "logs", "corrected", `${date}.md`);
 
   if (!existsSync(rawPath)) {
     console.error(chalk.red(`No raw log found for ${date}`));

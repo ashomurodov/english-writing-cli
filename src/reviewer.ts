@@ -1,10 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = join(__dirname, "..");
+import { join } from "node:path";
+import { PKG_DIR } from "./paths.js";
 
 export interface ErrorEntry {
   category: string;
@@ -47,7 +44,7 @@ export async function reviewLog(
   }
 
   const systemPrompt = readFileSync(
-    join(PROJECT_ROOT, "prompts", "review.txt"),
+    join(PKG_DIR, "prompts", "review.txt"),
     "utf-8"
   );
 

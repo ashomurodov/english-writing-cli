@@ -16,6 +16,7 @@ import { reviewLog, buildCorrectedMarkdown } from "./reviewer.js";
 import { showDiff } from "./differ.js";
 import { updateStats, printStats } from "./stats.js";
 import { generateWeeklyReport } from "./reporter.js";
+import { printReview } from "./printer.js";
 
 function getGit() {
   if (!existsSync(DATA_DIR)) {
@@ -175,30 +176,8 @@ program
       console.log(chalk.dim("\nGit commit skipped (no changes or git error)."));
     }
 
-    // Print summary
-    const s = review.summary;
-    console.log(chalk.bold.underline(`\nReview Summary — ${date}\n`));
-    console.log(`  Total sentences:  ${chalk.cyan(s.total_sentences)}`);
-    console.log(`  Correct:          ${chalk.green(s.correct_sentences)}`);
-    console.log(`  Mistakes:         ${chalk.red(s.incorrect_sentences)}`);
-
-    const pct = s.accuracy_percent;
-    const pctColor =
-      pct >= 80 ? chalk.green : pct >= 50 ? chalk.yellow : chalk.red;
-    console.log(`  Accuracy:         ${pctColor(`${pct}%`)}`);
-
-    if (s.top_error_categories.length > 0) {
-      console.log(
-        `  Top errors:       ${chalk.yellow(s.top_error_categories.join(", "))}`
-      );
-    }
-
-    console.log(
-      chalk.dim(`\nCorrected version saved to: logs/corrected/${date}.md`)
-    );
-    console.log(
-      chalk.dim(`Full analysis saved to: reports/daily/${date}.json`)
-    );
+    // Print full sentence-by-sentence review
+    printReview(review);
     console.log(chalk.dim(`Data directory: ${DATA_DIR}\n`));
   });
 

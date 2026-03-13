@@ -3,6 +3,7 @@ import { join } from "node:path";
 import chalk from "chalk";
 import type { ReviewResult } from "./reviewer.js";
 import { DATA_DIR } from "./paths.js";
+import { colorAccuracy } from "./printer.js";
 
 const STATS_PATH = join(DATA_DIR, "stats", "weakness-profile.json");
 
@@ -236,8 +237,3 @@ export function printStats(): void {
   console.log("");
 }
 
-function colorAccuracy(pct: number): string {
-  if (pct >= 80) return chalk.green(`${pct}%`);
-  if (pct >= 50) return chalk.yellow(`${pct}%`);
-  return chalk.red(`${pct}%`);
-}

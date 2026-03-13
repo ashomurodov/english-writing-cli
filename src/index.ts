@@ -51,6 +51,7 @@ async function ensureGit(): Promise<void> {
     console.log(chalk.dim("Initializing git repository..."));
     await git.init();
     // Create initial commit
+    
     await git.add(".");
     await git.commit("init: english tracker project");
   }

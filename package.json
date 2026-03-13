@@ -1,0 +1,48 @@
+{
+  "name": "english-writing-cli",
+  "version": "1.0.0",
+  "description": "CLI tool to track daily English writing practice with Claude API review",
+  "type": "module",
+  "bin": {
+    "english-tracker": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "prompts"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "log": "node dist/index.js log",
+    "diff": "node dist/index.js diff",
+    "stats": "node dist/index.js stats",
+    "report": "node dist/index.js report"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ashomurodov/english-writing-cli.git"
+  },
+  "keywords": [
+    "english",
+    "writing",
+    "practice",
+    "grammar",
+    "claude",
+    "ai",
+    "cli"
+  ],
+  "author": "ashomurodov",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "simple-git": "^3.27.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "typescript": "^5.7.0"
+  }
+}
